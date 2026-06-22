@@ -1,0 +1,364 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 23483a931b034aa887af618b7886c645
+      name: 'Templates/Video Surveillance'
+  templates:
+    - uuid: 5c34ca5e65374ecb88a1a36cc46e3b3b
+      template: 'Intelbras NVD by SNMP'
+      name: 'Intelbras NVD by SNMP'
+      description: |
+        Monitoramento do NVD Intelbras via SNMPv3.
+        OIDs 100% calibrados a partir do snmpwalk real do equipamento.
+        Mantido por: Rodrigo Reis.
+
+        SNMPv3 (configurar na INTERFACE SNMP do host):
+          Security name: zabbix_user | Level: authPriv | Auth: SHA | Priv: AES (CFB-AES)
+
+        NOTAS:
+        - Disco de CFTV opera em sobrescrita continua: uso ~100% e normal. Alerta de HDD e por STATUS, nao por espaco.
+        - CPU/Memoria (.2.1.9.1 e .2.1.9.2): itens incluidos SEM trigger ate confirmar qual e qual. Ver descricao dos itens.
+      groups:
+        - name: 'Templates/Video Surveillance'
+      items:
+        - uuid: e3a050497e9a47f3bec2daf885d791d6
+          name: 'Intelbras: SNMP walk (master)'
+          type: SNMP_AGENT
+          snmp_oid: 'walk[1.3.6.1.4.1.1004849.2.1,1.3.6.1.4.1.1004849.2.4,1.3.6.1.4.1.1004849.2.10.2]'
+          key: intelbras.snmp.walk
+          delay: 2m
+          timeout: 30s
+          history: '0'
+          trends: '0'
+          value_type: TEXT
+          description: 'Item mestre. Walk da arvore enterprise Intelbras .2. Todos os demais dependem deste.'
+          tags:
+            - tag: component
+              value: raw
+          triggers:
+            - uuid: e561882a735f4abbb40eb091b7d68d6d
+              expression: 'nodata(/Intelbras NVD 1432 by SNMP/intelbras.snmp.walk,10m)=1'
+              name: 'NVR sem resposta SNMP (possivelmente offline)'
+              priority: HIGH
+              description: 'Sem dados do item mestre por 10 min. NVR pode estar offline ou com SNMP indisponivel.'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: 153c0810eb454238af595bd3bc4f79b0
+          name: 'Modelo'
+          type: DEPENDENT
+          key: intelbras.system.model
+          value_type: CHAR
+          master_item: {key: intelbras.snmp.walk}
+          preprocessing:
+            - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.1.2.6.0', '0']}
+            - {type: DISCARD_UNCHANGED_HEARTBEAT, parameters: ['1d']}
+          tags: [{tag: component, value: system}]
+        - uuid: 5ded4adf470e419ea7ba64c0f8cd1677
+          name: 'Numero de serie'
+          type: DEPENDENT
+          key: intelbras.system.serial
+          value_type: CHAR
+          master_item: {key: intelbras.snmp.walk}
+          preprocessing:
+            - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.1.2.4.0', '0']}
+            - {type: DISCARD_UNCHANGED_HEARTBEAT, parameters: ['1d']}
+          tags: [{tag: component, value: system}]
+        - uuid: c6f4154677e141e9acf827082287f3cf
+          name: 'Versao de firmware'
+          type: DEPENDENT
+          key: intelbras.system.firmware
+          value_type: CHAR
+          master_item: {key: intelbras.snmp.walk}
+          preprocessing:
+            - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.1.2.5.0', '0']}
+            - {type: DISCARD_UNCHANGED_HEARTBEAT, parameters: ['1d']}
+          tags: [{tag: component, value: system}]
+        - uuid: 98cc1c127b634defaea31eb5113a39e9
+          name: 'Versao de hardware'
+          type: DEPENDENT
+          key: intelbras.system.hwversion
+          value_type: CHAR
+          master_item: {key: intelbras.snmp.walk}
+          preprocessing:
+            - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.1.1.2.0', '0']}
+            - {type: DISCARD_UNCHANGED_HEARTBEAT, parameters: ['1d']}
+          tags: [{tag: component, value: system}]
+        - uuid: 635983b9daba48bab1c7ca4e7dfacf07
+          name: 'Fabricante'
+          type: DEPENDENT
+          key: intelbras.system.vendor
+          value_type: CHAR
+          master_item: {key: intelbras.snmp.walk}
+          preprocessing:
+            - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.1.2.11.0', '0']}
+            - {type: DISCARD_UNCHANGED_HEARTBEAT, parameters: ['1d']}
+          tags: [{tag: component, value: system}]
+        - uuid: 4ff18adce02043ec961f277453f6a32a
+          name: 'Sistema operacional'
+          type: DEPENDENT
+          key: intelbras.system.os
+          value_type: CHAR
+          master_item: {key: intelbras.snmp.walk}
+          preprocessing:
+            - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.1.10.1.0', '0']}
+            - {type: DISCARD_UNCHANGED_HEARTBEAT, parameters: ['1d']}
+          tags: [{tag: component, value: system}]
+        - uuid: 5398df403bcf4717a9e31339c8abd473
+          name: 'Versao do kernel'
+          type: DEPENDENT
+          key: intelbras.system.kernel
+          value_type: CHAR
+          master_item: {key: intelbras.snmp.walk}
+          preprocessing:
+            - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.1.10.2.0', '0']}
+            - {type: DISCARD_UNCHANGED_HEARTBEAT, parameters: ['1d']}
+          tags: [{tag: component, value: system}]
+        - uuid: 3d8b25f7787f48408c7047efdb37c65b
+          name: 'Tempo de atividade (uptime)'
+          type: DEPENDENT
+          key: intelbras.system.uptime
+          value_type: FLOAT
+          units: uptime
+          master_item: {key: intelbras.snmp.walk}
+          preprocessing:
+            - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.1.6.0', '0']}
+            - {type: MULTIPLIER, parameters: ['0.01']}
+          tags: [{tag: component, value: system}]
+          triggers:
+            - uuid: 71314eb3af7041a48d3b2589e7f9d8a2
+              expression: 'last(/Intelbras NVD 1432 by SNMP/intelbras.system.uptime)<10m'
+              name: 'NVR reiniciou (uptime < 10 min)'
+              priority: WARNING
+              description: 'Uptime abaixo de 10 minutos indica reboot recente.'
+              manual_close: 'YES'
+              tags:
+                - tag: scope
+                  value: availability
+        - uuid: 45bcabba49e14c658c92ae6e7bbaa5f2
+          name: 'Total de canais'
+          type: DEPENDENT
+          key: intelbras.channels.total
+          value_type: UNSIGNED
+          master_item: {key: intelbras.snmp.walk}
+          preprocessing:
+            - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.10.2.1.0', '0']}
+          tags: [{tag: component, value: camera}]
+        - uuid: dd66c8dbf5414773a019a1f18ad7de9d
+          name: 'Uso (campo .2.1.9.2 - CONFIRMAR: provavel CPU ou memoria %)'
+          type: DEPENDENT
+          key: intelbras.system.usage.pct
+          value_type: FLOAT
+          units: '%'
+          master_item: {key: intelbras.snmp.walk}
+          description: 'Valor ~94. Provavel percentual de uso. Para confirmar, faca snmpget repetido neste OID: o que oscilar e uso (%). Depois disso aplicamos trigger com {$CPU.UTIL.MAX} ou {$MEMORY.UTIL.MAX}.'
+          preprocessing:
+            - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.1.9.2.0', '0']}
+          tags: [{tag: component, value: health}]
+        - uuid: 089aaf79a72f4768bd05800bd13a0624
+          name: 'Valor (campo .2.1.9.1 - CONFIRMAR: provavel memoria MB)'
+          type: DEPENDENT
+          key: intelbras.system.mem.raw
+          value_type: FLOAT
+          master_item: {key: intelbras.snmp.walk}
+          description: 'Valor ~623. Provavel memoria (MB) ou outro absoluto. Confirmar comparando com a tela do NVR.'
+          preprocessing:
+            - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.1.9.1.0', '0']}
+          tags: [{tag: component, value: health}]
+      discovery_rules:
+        - uuid: b923730448d849a8af9d485fc1518450
+          name: 'Descoberta de HDDs (status)'
+          type: DEPENDENT
+          key: intelbras.hdd.discovery
+          delay: '0'
+          master_item: {key: intelbras.snmp.walk}
+          description: 'Tabela .2.4.1.1 (.4=device, .5=status).'
+          preprocessing:
+            - type: SNMP_WALK_TO_JSON
+              parameters: ['{#HDD.DEV}', '1.3.6.1.4.1.1004849.2.4.1.1.4', '0']
+          item_prototypes:
+            - uuid: 0c608e26fb9046f4886b549b29e00d35
+              name: 'HD {#HDD.DEV}: Device'
+              type: DEPENDENT
+              key: 'intelbras.hdd.dev[{#SNMPINDEX}]'
+              value_type: CHAR
+              master_item: {key: intelbras.snmp.walk}
+              preprocessing:
+                - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.4.1.1.4.{#SNMPINDEX}', '0']}
+                - {type: DISCARD_UNCHANGED_HEARTBEAT, parameters: ['1d']}
+              tags: [{tag: component, value: storage}]
+            - uuid: 0f29c8845e8b415b8ac26eed075e2f75
+              name: 'HD {#HDD.DEV}: Status'
+              type: DEPENDENT
+              key: 'intelbras.hdd.status[{#SNMPINDEX}]'
+              value_type: CHAR
+              master_item: {key: intelbras.snmp.walk}
+              valuemap: {name: 'Intelbras HDD Status'}
+              preprocessing:
+                - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.4.1.1.5.{#SNMPINDEX}', '0']}
+              tags: [{tag: component, value: storage}]
+          trigger_prototypes:
+            - uuid: b6af41b6db9e4803acf5529a35c6408a
+              expression: 'find(/Intelbras NVD 1432 by SNMP/intelbras.hdd.status[{#SNMPINDEX}],,"like","Running")=0'
+              name: 'HD {#HDD.DEV} fora do estado Running'
+              priority: HIGH
+              description: 'Status diferente de Running (Error, Offline, sem disco).'
+              tags: [{tag: scope, value: availability}]
+        - uuid: 6b8a7967520b491aa391051c6ef5f303
+          name: 'Descoberta de Capacidade de HDD'
+          type: DEPENDENT
+          key: intelbras.hddcap.discovery
+          delay: '0'
+          master_item: {key: intelbras.snmp.walk}
+          description: 'Tabela .2.4.4.1 (.4=total GB, .5=livre GB, .6=uso %). Indexada pelo path ASCII. Informativo (disco roda cheio).'
+          preprocessing:
+            - type: SNMP_WALK_TO_JSON
+              parameters: ['{#HDDCAP.DEV}', '1.3.6.1.4.1.1004849.2.4.4.1.1', '0']
+          item_prototypes:
+            - uuid: 95f6bb7266674b1b900e0352b983d3c7
+              name: 'HD cap {#HDDCAP.DEV}: Capacidade total (confirmar GB)'
+              type: DEPENDENT
+              key: 'intelbras.hddcap.total[{#SNMPINDEX}]'
+              value_type: FLOAT
+              units: GB
+              master_item: {key: intelbras.snmp.walk}
+              preprocessing:
+                - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.4.4.1.4.{#SNMPINDEX}', '0']}
+              tags: [{tag: component, value: storage}]
+            - uuid: a0317203663742349c99ca5c86ce87ff
+              name: 'HD cap {#HDDCAP.DEV}: Espaco livre (confirmar GB)'
+              type: DEPENDENT
+              key: 'intelbras.hddcap.free[{#SNMPINDEX}]'
+              value_type: FLOAT
+              units: GB
+              master_item: {key: intelbras.snmp.walk}
+              preprocessing:
+                - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.4.4.1.5.{#SNMPINDEX}', '0']}
+              tags: [{tag: component, value: storage}]
+            - uuid: 3af0a7143adf4ba1b6ea51440e20208b
+              name: 'HD cap {#HDDCAP.DEV}: Uso do disco (%)'
+              type: DEPENDENT
+              key: 'intelbras.hddcap.usedpct[{#SNMPINDEX}]'
+              value_type: FLOAT
+              units: '%'
+              master_item: {key: intelbras.snmp.walk}
+              preprocessing:
+                - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.4.4.1.6.{#SNMPINDEX}', '0']}
+              tags: [{tag: component, value: storage}]
+        - uuid: a1c159168b454d94bfbe8840eb17fd4b
+          name: 'Descoberta de Cameras'
+          type: DEPENDENT
+          key: intelbras.camera.discovery
+          delay: '0'
+          master_item: {key: intelbras.snmp.walk}
+          description: 'Tabela .2.10.2.2.1 (.2=IP, .3=status, .4=nome). Canais Empty filtrados.'
+          preprocessing:
+            - type: SNMP_WALK_TO_JSON
+              parameters:
+                - '{#CAMERA.NAME}'
+                - '1.3.6.1.4.1.1004849.2.10.2.2.1.4'
+                - '0'
+                - '{#CAMERA.IP}'
+                - '1.3.6.1.4.1.1004849.2.10.2.2.1.2'
+                - '0'
+                - '{#CAMERA.STATUS}'
+                - '1.3.6.1.4.1.1004849.2.10.2.2.1.3'
+                - '0'
+          filter:
+            evaltype: AND
+            conditions:
+              - {macro: '{#CAMERA.STATUS}', value: 'Empty', operator: NOT_MATCHES_REGEX, formulaid: A}
+          item_prototypes:
+            - uuid: 4c79ecb0ffcb4e7d9b95d131ae33a3b8
+              name: 'Canal {#SNMPINDEX} ({#CAMERA.NAME}): Nome'
+              type: DEPENDENT
+              key: 'intelbras.camera.name[{#SNMPINDEX}]'
+              value_type: CHAR
+              master_item: {key: intelbras.snmp.walk}
+              preprocessing:
+                - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.10.2.2.1.4.{#SNMPINDEX}', '0']}
+                - {type: DISCARD_UNCHANGED_HEARTBEAT, parameters: ['1d']}
+              tags: [{tag: component, value: camera}]
+            - uuid: 0b16d156e8c74363bc50391103377a37
+              name: 'Canal {#SNMPINDEX} ({#CAMERA.NAME}): IP'
+              type: DEPENDENT
+              key: 'intelbras.camera.ip[{#SNMPINDEX}]'
+              value_type: CHAR
+              master_item: {key: intelbras.snmp.walk}
+              preprocessing:
+                - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.10.2.2.1.2.{#SNMPINDEX}', '0']}
+                - {type: DISCARD_UNCHANGED_HEARTBEAT, parameters: ['1d']}
+              tags: [{tag: component, value: camera}]
+            - uuid: d1f2eaec0cd446338623549512732466
+              name: 'Canal {#SNMPINDEX} ({#CAMERA.NAME}): Status'
+              type: DEPENDENT
+              key: 'intelbras.camera.status[{#SNMPINDEX}]'
+              value_type: CHAR
+              master_item: {key: intelbras.snmp.walk}
+              valuemap: {name: 'Intelbras Camera Status'}
+              preprocessing:
+                - {type: SNMP_WALK_VALUE, parameters: ['1.3.6.1.4.1.1004849.2.10.2.2.1.3.{#SNMPINDEX}', '0']}
+              tags: [{tag: component, value: camera}]
+          trigger_prototypes:
+            - uuid: b3b00303d0d84b36a6e6c97f9130f6d1
+              expression: 'find(/Intelbras NVD 1432 by SNMP/intelbras.camera.status[{#SNMPINDEX}],,"like","Connected")=0'
+              name: 'Camera Desconectada: canal {#SNMPINDEX} ({#CAMERA.NAME})'
+              priority: AVERAGE
+              description: 'Status diferente de Connected. Canais Empty nao sao descobertos.'
+              manual_close: 'YES'
+              tags: [{tag: scope, value: availability}]
+      macros:
+        - {macro: '{$CPU.UTIL.MAX}', value: '90', description: 'Limiar de CPU (aplicar apos confirmar o OID de uso).'}
+        - {macro: '{$MEMORY.UTIL.MAX}', value: '90', description: 'Limiar de memoria (aplicar apos confirmar o OID).'}
+      dashboards:
+        - uuid: 083b411668c14d658c23db89f3a9c98a
+          name: 'Intelbras NVD 1432 - Sumario'
+          pages:
+            - name: 'Visao geral'
+              widgets:
+                - type: item
+                  name: 'Modelo'
+                  x: '0'
+                  'y': '0'
+                  width: '18'
+                  height: '3'
+                  fields:
+                    - {type: ITEM, name: itemid, value: {host: 'Intelbras NVD 1432 by SNMP', key: intelbras.system.model}}
+                - type: item
+                  name: 'Total de canais'
+                  x: '18'
+                  'y': '0'
+                  width: '18'
+                  height: '3'
+                  fields:
+                    - {type: ITEM, name: itemid, value: {host: 'Intelbras NVD 1432 by SNMP', key: intelbras.channels.total}}
+                - type: item
+                  name: 'Uptime'
+                  x: '36'
+                  'y': '0'
+                  width: '18'
+                  height: '3'
+                  fields:
+                    - {type: ITEM, name: itemid, value: {host: 'Intelbras NVD 1432 by SNMP', key: intelbras.system.uptime}}
+                - type: problems
+                  name: 'Problemas ativos'
+                  x: '0'
+                  'y': '3'
+                  width: '54'
+                  height: '7'
+      valuemaps:
+        - uuid: 5962d1e19ce0413c8dd883169e342aaa
+          name: 'Intelbras HDD Status'
+          mappings:
+            - {value: 'Running', newvalue: 'Gravando/OK'}
+            - {value: 'Error', newvalue: 'Erro'}
+            - {value: 'Offline', newvalue: 'Offline'}
+            - {value: 'Sleeping', newvalue: 'Hibernando'}
+        - uuid: 4e69db9e14cb4571a18c9c4b944bda75
+          name: 'Intelbras Camera Status'
+          mappings:
+            - {value: 'Connected', newvalue: 'Conectada'}
+            - {value: 'Empty', newvalue: 'Vazio'}
+            - {value: 'Disconnected', newvalue: 'Desconectada'}
+            - {value: 'Connecting', newvalue: 'Conectando'}
+            - {value: 'Offline', newvalue: 'Offline'}
